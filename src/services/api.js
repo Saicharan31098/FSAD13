@@ -60,6 +60,37 @@ const initializeData = () => {
   if (!localStorage.getItem("erp_announcements")) {
     localStorage.setItem("erp_announcements", JSON.stringify([]));
   }
+  if (!localStorage.getItem("erp_borrowings")) {
+    localStorage.setItem("erp_borrowings", JSON.stringify([]));
+  }
+  if (!localStorage.getItem("erp_users")) {
+    localStorage.setItem("erp_users", JSON.stringify([
+      { id: 'USR001', username: 'admin', fullName: 'System Administrator', role: 'Administrator', lastLogin: '2023-10-15 09:42', status: 'Active', email: 'admin@university.edu', createdAt: new Date().toISOString() },
+      { id: 'USR002', username: 'jsmith', fullName: 'John Smith', role: 'Faculty', lastLogin: '2023-10-14 14:20', status: 'Active', email: 'jsmith@university.edu', createdAt: new Date().toISOString() },
+      { id: 'USR003', username: 'ljohnson', fullName: 'Lisa Johnson', role: 'Registrar', lastLogin: '2023-10-15 08:15', status: 'Active', email: 'ljohnson@university.edu', createdAt: new Date().toISOString() }
+    ]));
+  }
+  if (!localStorage.getItem("erp_students")) {
+    localStorage.setItem("erp_students", JSON.stringify([
+      { id: 'S2023001', name: 'John Smith', grade: 'Grade 10A', enrollmentDate: '2023-08-15', status: 'Active', email: 'john.smith@student.edu', phone: '123-456-7890', address: '123 Main St, City, State', dob: '2005-03-15', createdAt: new Date().toISOString() },
+      { id: 'S2023002', name: 'Emily Johnson', grade: 'Grade 11B', enrollmentDate: '2023-08-15', status: 'Active', email: 'emily.johnson@student.edu', phone: '123-456-7891', address: '456 Oak St, City, State', dob: '2004-07-22', createdAt: new Date().toISOString() },
+      { id: 'S2023003', name: 'Michael Brown', grade: 'Grade 9C', enrollmentDate: '2023-08-16', status: 'Probation', email: 'michael.brown@student.edu', phone: '123-456-7892', address: '789 Pine St, City, State', dob: '2006-11-05', createdAt: new Date().toISOString() }
+    ]));
+  }
+  if (!localStorage.getItem("erp_faculty")) {
+    localStorage.setItem("erp_faculty", JSON.stringify([
+      { id: 'F2023001', name: 'Dr. Robert Miller', department: 'Mathematics', position: 'Professor', email: 'robert.m@unierp.edu', phone: '123-456-7801', qualification: 'Ph.D. in Mathematics', status: 'Active', createdAt: new Date().toISOString() },
+      { id: 'F2023002', name: 'Prof. Jennifer Lee', department: 'Science', position: 'Associate Professor', email: 'jennifer.l@unierp.edu', phone: '123-456-7802', qualification: 'Ph.D. in Physics', status: 'Active', createdAt: new Date().toISOString() },
+      { id: 'F2023003', name: 'Dr. Samuel Wilson', department: 'Computer Science', position: 'Assistant Professor', email: 'samuel.w@unierp.edu', phone: '123-456-7803', qualification: 'Ph.D. in Computer Science', status: 'On Leave', createdAt: new Date().toISOString() }
+    ]));
+  }
+  if (!localStorage.getItem("erp_transactions")) {
+    localStorage.setItem("erp_transactions", JSON.stringify([
+      { id: 'TXN2023001', student: 'John Smith', studentId: 'S2023001', type: 'Tuition Fee', amount: 1200, date: '2023-10-15', status: 'Paid', description: 'Semester 1 Tuition', createdAt: new Date().toISOString() },
+      { id: 'TXN2023002', student: 'Emily Johnson', studentId: 'S2023002', type: 'Library Fine', amount: 25, date: '2023-10-14', status: 'Pending', description: 'Library Late Fee', createdAt: new Date().toISOString() },
+      { id: 'TXN2023003', student: 'Michael Brown', studentId: 'S2023003', type: 'Tuition Fee', amount: 1200, date: '2023-10-10', status: 'Overdue', description: 'Semester 1 Tuition', createdAt: new Date().toISOString() }
+    ]));
+  }
 };
 
 initializeData();
@@ -841,9 +872,463 @@ export const CommonAPI = {
   },
 };
 
+// ============================================
+// LIBRARY API PATHS
+// ============================================
+
+export const LibraryAPI = {
+  // Get All Borrowing Records
+  getBorrowings: () => {
+    try {
+      const borrowings = JSON.parse(localStorage.getItem("erp_borrowings")) || [];
+      return { success: true, data: borrowings };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Specific Borrowing Record
+  getBorrowingRecord: (borrowingId) => {
+    try {
+      const borrowings = JSON.parse(localStorage.getItem("erp_borrowings")) || [];
+      const record = borrowings.find((b) => b.id === borrowingId);
+      if (record) {
+        return { success: true, data: record };
+      }
+      return { success: false, error: "Borrowing record not found" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Create Borrowing Record
+  createBorrowing: (borrowingData) => {
+    try {
+      const borrowings = JSON.parse(localStorage.getItem("erp_borrowings")) || [];
+      const newBorrowing = {
+        id: `BOR${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        ...borrowingData,
+      };
+      borrowings.push(newBorrowing);
+      localStorage.setItem("erp_borrowings", JSON.stringify(borrowings));
+      return { success: true, data: newBorrowing };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Update Borrowing Record (e.g., for returning books, updating status)
+  updateBorrowing: (borrowingId, updateData) => {
+    try {
+      const borrowings = JSON.parse(localStorage.getItem("erp_borrowings")) || [];
+      const index = borrowings.findIndex((b) => b.id === borrowingId);
+      if (index > -1) {
+        borrowings[index] = { 
+          ...borrowings[index], 
+          ...updateData,
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem("erp_borrowings", JSON.stringify(borrowings));
+        return { success: true, data: borrowings[index] };
+      }
+      return { success: false, error: "Borrowing record not found" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Delete Borrowing Record
+  deleteBorrowing: (borrowingId) => {
+    try {
+      const borrowings = JSON.parse(localStorage.getItem("erp_borrowings")) || [];
+      const filtered = borrowings.filter((b) => b.id !== borrowingId);
+      localStorage.setItem("erp_borrowings", JSON.stringify(filtered));
+      return { success: true, message: "Borrowing record deleted successfully" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Borrowing Records by Student
+  getBorrowingsByStudent: (studentId) => {
+    try {
+      const borrowings = JSON.parse(localStorage.getItem("erp_borrowings")) || [];
+      const filtered = borrowings.filter((b) => b.studentId === studentId);
+      return { success: true, data: filtered };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Overdue Books
+  getOverdueBooks: () => {
+    try {
+      const borrowings = JSON.parse(localStorage.getItem("erp_borrowings")) || [];
+      const today = new Date();
+      const overdue = borrowings.filter((b) => {
+        const dueDate = new Date(b.dueDate);
+        return dueDate < today && b.status !== "Returned";
+      });
+      return { success: true, data: overdue };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+};
+
+// ============================================
+// USER MANAGEMENT API PATHS
+// ============================================
+
+export const UserManagementAPI = {
+  // Get All Users
+  getAllUsers: () => {
+    try {
+      const users = JSON.parse(localStorage.getItem("erp_users")) || [];
+      return { success: true, data: users };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Specific User
+  getUser: (userId) => {
+    try {
+      const users = JSON.parse(localStorage.getItem("erp_users")) || [];
+      const user = users.find((u) => u.id === userId);
+      if (user) {
+        return { success: true, data: user };
+      }
+      return { success: false, error: "User not found" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Create New User
+  createUser: (userData) => {
+    try {
+      const users = JSON.parse(localStorage.getItem("erp_users")) || [];
+      
+      // Check if username already exists
+      if (users.some((u) => u.username === userData.username)) {
+        return { success: false, error: "Username already exists" };
+      }
+
+      const newUser = {
+        id: `USR${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        lastLogin: null,
+        status: userData.status || 'Active',
+        ...userData,
+      };
+      users.push(newUser);
+      localStorage.setItem("erp_users", JSON.stringify(users));
+      return { success: true, data: newUser };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Update User
+  updateUser: (userId, updateData) => {
+    try {
+      const users = JSON.parse(localStorage.getItem("erp_users")) || [];
+      const index = users.findIndex((u) => u.id === userId);
+      if (index > -1) {
+        users[index] = {
+          ...users[index],
+          ...updateData,
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem("erp_users", JSON.stringify(users));
+        return { success: true, data: users[index] };
+      }
+      return { success: false, error: "User not found" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Delete User
+  deleteUser: (userId) => {
+    try {
+      const users = JSON.parse(localStorage.getItem("erp_users")) || [];
+      const filtered = users.filter((u) => u.id !== userId);
+      localStorage.setItem("erp_users", JSON.stringify(filtered));
+      return { success: true, message: "User deleted successfully" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Users by Role
+  getUsersByRole: (role) => {
+    try {
+      const users = JSON.parse(localStorage.getItem("erp_users")) || [];
+      const filtered = users.filter((u) => u.role === role);
+      return { success: true, data: filtered };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Active Users
+  getActiveUsers: () => {
+    try {
+      const users = JSON.parse(localStorage.getItem("erp_users")) || [];
+      const active = users.filter((u) => u.status === 'Active');
+      return { success: true, data: active };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Deactivate User
+  deactivateUser: (userId) => {
+    try {
+      return UserManagementAPI.updateUser(userId, { status: 'Inactive' });
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Activate User
+  activateUser: (userId) => {
+    try {
+      return UserManagementAPI.updateUser(userId, { status: 'Active' });
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+};
+
+// ============================================
+// FACULTY MANAGEMENT API
+// ============================================
+
+export const FacultyAPI = {
+  // Get All Faculty
+  getAllFaculty: () => {
+    try {
+      const faculty = JSON.parse(localStorage.getItem("erp_faculty")) || [];
+      return { success: true, data: faculty };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Specific Faculty
+  getFaculty: (facultyId) => {
+    try {
+      const faculty = JSON.parse(localStorage.getItem("erp_faculty")) || [];
+      const member = faculty.find((f) => f.id === facultyId);
+      if (member) {
+        return { success: true, data: member };
+      }
+      return { success: false, error: "Faculty member not found" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Create Faculty
+  addFaculty: (facultyData) => {
+    try {
+      const faculty = JSON.parse(localStorage.getItem("erp_faculty")) || [];
+      const newFaculty = {
+        id: `F${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        ...facultyData,
+      };
+      faculty.push(newFaculty);
+      localStorage.setItem("erp_faculty", JSON.stringify(faculty));
+      return { success: true, data: newFaculty };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Update Faculty
+  updateFaculty: (facultyId, updateData) => {
+    try {
+      const faculty = JSON.parse(localStorage.getItem("erp_faculty")) || [];
+      const index = faculty.findIndex((f) => f.id === facultyId);
+      if (index > -1) {
+        faculty[index] = {
+          ...faculty[index],
+          ...updateData,
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem("erp_faculty", JSON.stringify(faculty));
+        return { success: true, data: faculty[index] };
+      }
+      return { success: false, error: "Faculty member not found" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Delete Faculty
+  deleteFaculty: (facultyId) => {
+    try {
+      const faculty = JSON.parse(localStorage.getItem("erp_faculty")) || [];
+      const filtered = faculty.filter((f) => f.id !== facultyId);
+      localStorage.setItem("erp_faculty", JSON.stringify(filtered));
+      return { success: true, message: "Faculty member deleted successfully" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Faculty by Department
+  getFacultyByDepartment: (department) => {
+    try {
+      const faculty = JSON.parse(localStorage.getItem("erp_faculty")) || [];
+      const filtered = faculty.filter((f) => f.department === department);
+      return { success: true, data: filtered };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+};
+
+// ============================================
+// FINANCE & TRANSACTION API
+// ============================================
+
+export const FinanceAPI = {
+  // Get All Transactions
+  getAllTransactions: () => {
+    try {
+      const transactions = JSON.parse(localStorage.getItem("erp_transactions")) || [];
+      return { success: true, data: transactions };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Specific Transaction
+  getTransaction: (transactionId) => {
+    try {
+      const transactions = JSON.parse(localStorage.getItem("erp_transactions")) || [];
+      const transaction = transactions.find((t) => t.id === transactionId);
+      if (transaction) {
+        return { success: true, data: transaction };
+      }
+      return { success: false, error: "Transaction not found" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Create Transaction
+  addTransaction: (transactionData) => {
+    try {
+      const transactions = JSON.parse(localStorage.getItem("erp_transactions")) || [];
+      const newTransaction = {
+        id: `TXN${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        ...transactionData,
+      };
+      transactions.push(newTransaction);
+      localStorage.setItem("erp_transactions", JSON.stringify(transactions));
+      return { success: true, data: newTransaction };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Update Transaction
+  updateTransaction: (transactionId, updateData) => {
+    try {
+      const transactions = JSON.parse(localStorage.getItem("erp_transactions")) || [];
+      const index = transactions.findIndex((t) => t.id === transactionId);
+      if (index > -1) {
+        transactions[index] = {
+          ...transactions[index],
+          ...updateData,
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem("erp_transactions", JSON.stringify(transactions));
+        return { success: true, data: transactions[index] };
+      }
+      return { success: false, error: "Transaction not found" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Delete Transaction
+  deleteTransaction: (transactionId) => {
+    try {
+      const transactions = JSON.parse(localStorage.getItem("erp_transactions")) || [];
+      const filtered = transactions.filter((t) => t.id !== transactionId);
+      localStorage.setItem("erp_transactions", JSON.stringify(filtered));
+      return { success: true, message: "Transaction deleted successfully" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Transactions by Status
+  getTransactionsByStatus: (status) => {
+    try {
+      const transactions = JSON.parse(localStorage.getItem("erp_transactions")) || [];
+      const filtered = transactions.filter((t) => t.status === status);
+      return { success: true, data: filtered };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Transactions by Student
+  getTransactionsByStudent: (studentId) => {
+    try {
+      const transactions = JSON.parse(localStorage.getItem("erp_transactions")) || [];
+      const filtered = transactions.filter((t) => t.studentId === studentId);
+      return { success: true, data: filtered };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Get Financial Summary
+  getFinancialSummary: () => {
+    try {
+      const transactions = JSON.parse(localStorage.getItem("erp_transactions")) || [];
+      const totalRevenue = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+      const paid = transactions.filter((t) => t.status === 'Paid').reduce((sum, t) => sum + (t.amount || 0), 0);
+      const pending = transactions.filter((t) => t.status === 'Pending').reduce((sum, t) => sum + (t.amount || 0), 0);
+      const overdue = transactions.filter((t) => t.status === 'Overdue').reduce((sum, t) => sum + (t.amount || 0), 0);
+
+      return {
+        success: true,
+        data: {
+          totalRevenue,
+          paid,
+          pending,
+          overdue,
+          totalTransactions: transactions.length,
+          paidTransactions: transactions.filter((t) => t.status === 'Paid').length,
+          pendingTransactions: transactions.filter((t) => t.status === 'Pending').length,
+          overdueTransactions: transactions.filter((t) => t.status === 'Overdue').length,
+        }
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+};
+
 export default {
   TeacherAPI,
   StudentAPI,
   AdminAPI,
   CommonAPI,
+  LibraryAPI,
+  UserManagementAPI,
+  FacultyAPI,
+  FinanceAPI,
 };

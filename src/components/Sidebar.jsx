@@ -21,6 +21,8 @@ export default function Sidebar({ activePage, setActivePage, user }) {
       { id: "dashboard-page", label: "Dashboard", icon: "fa-solid fa-house" },
       { id: "students-page", label: "Students", icon: "fa-solid fa-user-graduate" },
       { id: "courses-page", label: "My Courses", icon: "fa-solid fa-book" },
+      { id: "attendance-page", label: "Attendance", icon: "fa-solid fa-clipboard-list" },
+      { id: "announcements-page", label: "Announcements", icon: "fa-solid fa-bullhorn" },
       { id: "schedule-page", label: "Schedule", icon: "fa-solid fa-calendar-days" },
       { id: "reports-page", label: "Reports", icon: "fa-solid fa-chart-column" },
       { id: "settings-page", label: "Settings", icon: "fa-solid fa-gear" }

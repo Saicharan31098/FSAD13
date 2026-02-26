@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CreateAssignmentModal from "./CreateAssignmentModal";
 import PostMarksModal from "./PostMarksModal";
 import { TeacherAPI } from "../../services/api";
 
-export default function TeacherDashboard({ user }) {
+export default function TeacherDashboard({ user, setActivePage }) {
   const [selectedClass, setSelectedClass] = useState("CS101");
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
   const [showPostMarks, setShowPostMarks] = useState(false);
@@ -61,6 +61,18 @@ export default function TeacherDashboard({ user }) {
     avgPerformance: 86,
   });
 
+  const [assignments, setAssignments] = useState([]);
+
+  // load assignments whenever class changes
+  React.useEffect(() => {
+    if (selectedClass) {
+      const res = TeacherAPI.getAssignments(selectedClass);
+      if (res.success) {
+        setAssignments(res.data);
+      }
+    }
+  }, [selectedClass]);
+
   const getGradeColor = (grade) => {
     if (grade.startsWith("A")) return "#4CAF50";
     if (grade.startsWith("B")) return "#2196F3";
@@ -72,6 +84,36 @@ export default function TeacherDashboard({ user }) {
     setShowCreateAssignment(true);
   };
 
+  // export progress as CSV
+  const handleExportReport = () => {
+    const header = [
+      "Student Name",
+      "Assignment Marks",
+      "Daily Work",
+      "Attendance",
+      "Project Marks",
+      "Overall Grade",
+    ];
+    const rows = studentProgress.map((s) => [
+      s.name,
+      s.assignmentMarks,
+      s.dailyWork,
+      s.attendance,
+      s.projectMarks,
+      s.overallGrade,
+    ]);
+    const csvContent = [header, ...rows]
+      .map((r) => r.join(","))
+      .join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${selectedClass || "class"}-report.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handlePostMarksClick = (student) => {
     setSelectedStudent(student);
     setShowPostMarks(true);
@@ -79,7 +121,11 @@ export default function TeacherDashboard({ user }) {
 
   const handleAssignmentSuccess = (newAssignment) => {
     console.log("Assignment created:", newAssignment);
-    // Optionally refresh assignments list
+    // refresh assignments list
+    const res = TeacherAPI.getAssignments(selectedClass);
+    if (res.success) {
+      setAssignments(res.data);
+    }
   };
 
   const handleMarksSuccess = (marksData) => {
@@ -133,11 +179,21 @@ export default function TeacherDashboard({ user }) {
             <p>Class Average</p>
           </div>
         </div>
+
+        <div className="stat-card">
+          <div className="stat-icon" style={{ backgroundColor: "#3f51b5" }}>
+            <i className="fa-solid fa-file-alt"></i>
+          </div>
+          <div className="stat-content">
+            <h3>{assignments.length}</h3>
+            <p>Assignments Created</p>
+          </div>
+        </div>
       </div>
 
       {/* Class Selection */}
       <div className="section-card">
-        <h2>Select Class</h2>
+        <h2 style={{color:'#000'}}>Select Class</h2>
         <div className="class-selector">
           {classes.map((cls) => (
             <button
@@ -176,7 +232,11 @@ export default function TeacherDashboard({ user }) {
             </thead>
             <tbody>
               {studentProgress.map((student) => (
-                <tr key={student.id}>
+                <tr
+                  key={student.id}
+                  onClick={() => setSelectedStudent(student)}
+                  style={{ cursor: 'pointer', backgroundColor: selectedStudent?.id === student.id ? 'rgba(0,0,0,0.05)' : 'transparent' }}
+                >
                   <td className="student-name">{student.name}</td>
                   <td className="marks">{student.assignmentMarks}%</td>
                   <td className="marks">{student.dailyWork}%</td>
@@ -217,15 +277,41 @@ export default function TeacherDashboard({ user }) {
             <i className="fa-solid fa-plus"></i>
             <span>Create Assignment</span>
           </button>
-          <button className="action-btn" onClick={() => alert("Update marks for selected student")}>
+          <button className="action-btn" onClick={handleExportReport}>
+            <i className="fa-solid fa-download"></i>
+            <span>Export Report</span>
+          </button>
+          <button
+            className="action-btn"
+            onClick={() => {
+              if (selectedStudent) {
+                handlePostMarksClick(selectedStudent);
+              } else {
+                alert('Select a student row above then click this button to update marks.');
+              }
+            }}
+          >
             <i className="fa-solid fa-pen-to-square"></i>
             <span>Update Marks</span>
           </button>
-          <button className="action-btn" onClick={() => alert("Send announcement")}>
+          <button
+            className="action-btn"
+            onClick={() => setActivePage && setActivePage('announcements-page')}
+          >
             <i className="fa-solid fa-bell"></i>
             <span>Send Announcement</span>
           </button>
-          <button className="action-btn" onClick={() => alert("View reports")}>
+          <button
+            className="action-btn"
+            onClick={() => setActivePage && setActivePage('attendance-page')}
+          >
+            <i className="fa-solid fa-clipboard-list"></i>
+            <span>Mark Attendance</span>
+          </button>
+          <button
+            className="action-btn"
+            onClick={() => setActivePage && setActivePage('reports-page')}
+          >
             <i className="fa-solid fa-chart-bar"></i>
             <span>View Reports</span>
           </button>

@@ -13,8 +13,10 @@ import LibraryPage from "./Pages/LibraryPage";
 import ReportsPage from "./Pages/ReportsPage";
 import SettingsPage from "./Pages/SettingsPage";
 import AttendanceRegister from "./Pages/AttendanceRegister";
+import TeacherAttendancePage from "./Pages/TeacherAttendancePage";
+import AnnouncementsPage from "./Pages/AnnouncementsPage";
 
-export default function MainContent({ activePage, user }) {
+export default function MainContent({ activePage, user, setActivePage }) {
   // Render role-specific dashboard
   const renderDashboard = () => {
     const role = user?.role?.toLowerCase();
@@ -22,7 +24,7 @@ export default function MainContent({ activePage, user }) {
     if (role === "admin") {
       return <AdminDashboard user={user} />;
     } else if (role === "teacher") {
-      return <TeacherDashboard user={user} />;
+      return <TeacherDashboard user={user} setActivePage={setActivePage} />;
     } else if (role === "student") {
       return <StudentDashboard user={user} />;
     }
@@ -40,7 +42,10 @@ export default function MainContent({ activePage, user }) {
       {activePage === "library-page" && <LibraryPage />}
       {activePage === "reports-page" && <ReportsPage />}
       {activePage === "settings-page" && <SettingsPage />}
-      {activePage === "attendance-page" && <AttendanceRegister />}
+      {activePage === "attendance-page" && (
+        user?.role?.toLowerCase() === "teacher" ? <TeacherAttendancePage /> : <AttendanceRegister />
+      )}
+      {activePage === "announcements-page" && <AnnouncementsPage />}
     </div>
   );
 }

@@ -18,7 +18,7 @@ export default function Layout({ user, onLogout, activePage, setActivePage }) {
       {/* Right side */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Header user={user} onLogout={onLogout} />
-        <MainContent activePage={activePage} user={user} />
+        <MainContent activePage={activePage} user={user} setActivePage={setActivePage} />
       </div>
 
     </div>
