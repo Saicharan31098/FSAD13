@@ -21,6 +21,10 @@ function App() {
     }
   }, []);
 
+  // called when the Login component reports a successful sign‑in (or auto‑registration)
+  // it saves the active session under `uniERPUser` so the app can auto‑restore on reload.
+  // the Login component itself is responsible for a separate "remember me" value
+  // which will pre‑fill the form even after an explicit logout.
   const handleLogin = (userOrName) => {
     let username = typeof userOrName === "string" ? userOrName : userOrName?.username;
     let role = typeof userOrName === "object" && userOrName?.role ? userOrName.role : "student";
@@ -47,6 +51,8 @@ function App() {
     setUser(null);
     setIsLoggedIn(false);
     localStorage.removeItem("uniERPUser");
+    // do not touch rememberedUser here; if the user chose "remember me" we keep the
+    // info so the login form can pre‑populate next time. They can always uncheck the box.
   };
 
   return (

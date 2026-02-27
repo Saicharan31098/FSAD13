@@ -6,6 +6,9 @@ export default function Login({ onLogin }) {
   const [inputCaptcha, setInputCaptcha] = useState("");
   const [showSignup, setShowSignup] = useState(false);
   const [selectedRole, setSelectedRole] = useState("student");
+  const [usernameInput, setUsernameInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
 
   const roles = [
     {
@@ -41,6 +44,17 @@ export default function Login({ onLogin }) {
     setCaptcha(generateCaptcha());
   };
 
+  // when the component mounts attempt to prefill using a remembered user record
+  React.useEffect(() => {
+    const remembered = JSON.parse(localStorage.getItem("rememberedUser"));
+    if (remembered) {
+      setUsernameInput(remembered.username || "");
+      setSelectedRole(remembered.role || "student");
+      setRememberMe(true);
+      // don't auto-login after explicit logout, just pre-fill
+    }
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -50,20 +64,33 @@ export default function Login({ onLogin }) {
         return;
       }
 
-      const username = e.target.username.value;
+      const username = usernameInput.trim();
       // Disallow emails in the username field to prevent confusion
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (emailRegex.test(username)) {
         alert("Please enter a username, not an email address.");
         return;
       }
-      const password = e.target.password.value;
-      const role = e.target.role ? e.target.role.value : "student";
+      const password = passwordInput;
+      const role = selectedRole;
 
       const users = JSON.parse(localStorage.getItem("edu_users")) || {};
       const saved = users[username];
       if (!saved) {
-        alert("Wrong credentials: user does not exist");
+        // prompt user to create a new account without leaving the login form
+        if (window.confirm("User does not exist. Would you like to register a new account?")) {
+          // perform a quick registration using the credentials entered
+          const hashedPwd = await hashPassword(password);
+          const defaultEmail = `${username}@university.edu`;
+          users[username] = { username, role, password: hashedPwd, email: defaultEmail };
+          localStorage.setItem("edu_users", JSON.stringify(users));
+          if (rememberMe) {
+            localStorage.setItem("rememberedUser", JSON.stringify({ username, role, email: defaultEmail }));
+          } else {
+            localStorage.removeItem("rememberedUser");
+          }
+          onLogin({ username, role, email: defaultEmail });
+        }
         return;
       }
 
@@ -78,10 +105,26 @@ export default function Login({ onLogin }) {
         return;
       }
 
+      // remember or forget the user
+      if (rememberMe) {
+        localStorage.setItem("rememberedUser", JSON.stringify({ username, role: saved.role, email: saved.email }));
+      } else {
+        localStorage.removeItem("rememberedUser");
+      }
+
       // include stored email when logging in (always use registered role)
       onLogin({ username, role: saved.role, email: saved.email });
     })();
   };
+
+  // clear login inputs when switching between login/signup so values don't bleed over
+  React.useEffect(() => {
+    if (showSignup) {
+      setUsernameInput("");
+      setPasswordInput("");
+      setInputCaptcha("");
+    }
+  }, [showSignup]);
 
   const handleRegister = (e) => {
     e.preventDefault();
@@ -151,19 +194,38 @@ export default function Login({ onLogin }) {
 
             <label className="input-label">Username</label>
             <div className="input-box">
-              <input type="text" name="username" placeholder="Enter your username" required />
+              <input
+                type="text"
+                name="username"
+                placeholder="Enter your username"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                required
+              />
               <i className="fa-solid fa-user input-icon"></i>
             </div>
 
             <label className="input-label">Password</label>
             <div className="input-box">
-              <input type="password" name="password" placeholder="Enter your password" required />
+              <input
+                type="password"
+                name="password"
+                placeholder="Enter your password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                required
+              />
               <i className="fa-solid fa-lock input-icon"></i>
             </div>
 
             <label className="input-label">Login as</label>
             <div className="input-box">
-              <select name="role" className="captcha-input" defaultValue="student">
+              <select
+                name="role"
+                className="captcha-input"
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+              >
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
                 <option value="admin">Admin</option>
@@ -187,6 +249,17 @@ export default function Login({ onLogin }) {
               required
             />
 
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <input
+                type="checkbox"
+                id="remember-me"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <label htmlFor="remember-me" style={{ marginLeft: '6px', fontSize: '0.9rem' }}>
+                Remember me
+              </label>
+            </div>
             <button className="login-btn">Login</button>
 
             <div className="login-footer">
